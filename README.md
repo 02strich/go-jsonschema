@@ -4,19 +4,19 @@ This tool generates Go data types and structs that corresponds to definitions in
 
 ## Installing
 
-* **Download**: Get a release [here](https://github.com/atombender/go-jsonschema/releases).
+* **Download**: Get a release [here](https://github.com/02strich/go-jsonschema/releases).
 
 * **Install from source**: To install with Go 1.16+:
 
 ```shell
-$ go get github.com/atombender/go-jsonschema/...
-$ go install github.com/atombender/go-jsonschema/cmd/gojsonschema@latest
+$ go get github.com/02strich/go-jsonschema/...
+$ go install github.com/02strich/go-jsonschema/cmd/gojsonschema@latest
 ```
 
 * **Install with Bingo**: To install with [Bingo](https://github.com/bwplotka/bingo):
 
 ```shell
-$ bingo get github.com/atombender/go-jsonschema/cmd/gojsonschema
+$ bingo get github.com/02strich/go-jsonschema/cmd/gojsonschema
 ```
 
 ## Usage

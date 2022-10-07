@@ -4,8 +4,8 @@ import (
 	"sort"
 	"unicode"
 
-	"github.com/atombender/go-jsonschema/pkg/codegen"
-	"github.com/atombender/go-jsonschema/pkg/schemas"
+	"github.com/02strich/go-jsonschema/pkg/codegen"
+	"github.com/02strich/go-jsonschema/pkg/schemas"
 )
 
 func splitIdentifierByCaseAndSeparators(s string) []string {

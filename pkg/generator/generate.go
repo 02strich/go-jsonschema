@@ -9,8 +9,8 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/atombender/go-jsonschema/pkg/codegen"
-	"github.com/atombender/go-jsonschema/pkg/schemas"
+	"github.com/02strich/go-jsonschema/pkg/codegen"
+	"github.com/02strich/go-jsonschema/pkg/schemas"
 )
 
 type Config struct {

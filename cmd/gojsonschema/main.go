@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/atombender/go-jsonschema/pkg/generator"
+	"github.com/02strich/go-jsonschema/pkg/generator"
 )
 
 var (

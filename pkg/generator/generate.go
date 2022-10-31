@@ -13,7 +13,12 @@ import (
 	"github.com/02strich/go-jsonschema/pkg/schemas"
 )
 
+type ConfigFlags struct {
+	IntAsInt64 bool
+}
+
 type Config struct {
+	Flags              ConfigFlags
 	SchemaMappings     []SchemaMapping
 	Capitalizations    []string
 	ResolveExtensions  []string
@@ -594,7 +599,7 @@ func (g *schemaGenerator) generateType(
 	case schemas.TypeNameNull:
 		return codegen.EmptyInterfaceType{}, nil
 	default:
-		return codegen.PrimitiveTypeFromJSONSchemaType(t.Type[typeIndex], typeShouldBePointer)
+		return codegen.PrimitiveTypeFromJSONSchemaType(t.Type[typeIndex], typeShouldBePointer, g.Generator.config.Flags.IntAsInt64)
 	}
 }
 
@@ -723,7 +728,7 @@ func (g *schemaGenerator) generateTypeInline(
 		}
 
 		if schemas.IsPrimitiveType(t.Type[typeIndex]) {
-			return codegen.PrimitiveTypeFromJSONSchemaType(t.Type[typeIndex], typeShouldBePointer)
+			return codegen.PrimitiveTypeFromJSONSchemaType(t.Type[typeIndex], typeShouldBePointer, g.Generator.config.Flags.IntAsInt64)
 		}
 
 		if t.Type[typeIndex] == schemas.TypeNameArray {
@@ -753,7 +758,7 @@ func (g *schemaGenerator) generateEnumType(
 	var enumType codegen.Type
 	if len(t.Type) == 1 {
 		var err error
-		if enumType, err = codegen.PrimitiveTypeFromJSONSchemaType(t.Type[0], false); err != nil {
+		if enumType, err = codegen.PrimitiveTypeFromJSONSchemaType(t.Type[0], false, g.Generator.config.Flags.IntAsInt64); err != nil {
 			return nil, err
 		}
 		wrapInStruct = t.Type[0] == schemas.TypeNameNull // Null uses interface{}, which cannot have methods

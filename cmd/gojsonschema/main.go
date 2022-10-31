@@ -13,6 +13,7 @@ import (
 
 var (
 	verbose           bool
+	intAsInt64        bool
 	defaultPackage    string
 	defaultOutput     string
 	schemaPackages    []string
@@ -51,6 +52,9 @@ var rootCmd = &cobra.Command{
 		}
 
 		cfg := generator.Config{
+			Flags: generator.ConfigFlags{
+				IntAsInt64: intAsInt64,
+			},
 			Warner: func(message string) {
 				log("Warning: %s", message)
 			},
@@ -120,6 +124,8 @@ var rootCmd = &cobra.Command{
 func main() {
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false,
 		"Verbose output")
+	rootCmd.PersistentFlags().BoolVar(&intAsInt64, "intAsInt64",  false,
+		"Render integers as int64 instead of int")
 	rootCmd.PersistentFlags().StringVarP(&defaultPackage, "package", "p", "",
 		`Default name of package to declare Go files under, unless overridden with
 --schema-package`)

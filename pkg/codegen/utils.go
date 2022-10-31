@@ -24,7 +24,7 @@ func isPointerType(t Type) bool {
 	}
 }
 
-func PrimitiveTypeFromJSONSchemaType(jsType string, pointer bool) (Type, error) {
+func PrimitiveTypeFromJSONSchemaType(jsType string, pointer bool, intAsInt64 bool) (Type, error) {
 	switch jsType {
 	case schemas.TypeNameString:
 		t := PrimitiveType{"string"}
@@ -40,6 +40,9 @@ func PrimitiveTypeFromJSONSchemaType(jsType string, pointer bool) (Type, error) 
 		return t, nil
 	case schemas.TypeNameInteger:
 		t := PrimitiveType{"int"}
+		if intAsInt64 == true {
+			t = PrimitiveType{"int64"}
+		}
 		if pointer == true {
 			return WrapTypeInPointer(t), nil
 		}

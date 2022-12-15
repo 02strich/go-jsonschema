@@ -698,6 +698,12 @@ func (g *schemaGenerator) generateStructType(
 func (g *schemaGenerator) generateTypeInline(
 	t *schemas.Type,
 	scope nameScope) (codegen.Type, error) {
+
+	inlineScope := scope
+	if t.Title != "" {
+		inlineScope = newNameScope(t.Title)
+	}
+
 	if t.Enum == nil && t.Ref == "" {
 		if ext := t.GoJSONSchemaExtension; ext != nil {
 			for _, pkg := range ext.Imports {
@@ -737,7 +743,7 @@ func (g *schemaGenerator) generateTypeInline(
 				theType = codegen.EmptyInterfaceType{}
 			} else {
 				var err error
-				theType, err = g.generateTypeInline(t.Items, scope.add("Elem"))
+				theType, err = g.generateTypeInline(t.Items, inlineScope.add("Elem"))
 				if err != nil {
 					return nil, err
 				}
@@ -745,7 +751,7 @@ func (g *schemaGenerator) generateTypeInline(
 			return &codegen.ArrayType{Type: theType}, nil
 		}
 	}
-	return g.generateDeclaredType(t, scope)
+	return g.generateDeclaredType(t, inlineScope)
 }
 
 func (g *schemaGenerator) generateEnumType(

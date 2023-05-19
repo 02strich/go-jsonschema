@@ -193,7 +193,8 @@ func (g *Generator) findOutputFileForSchemaID(id string) (*output, error) {
 
 func (g *Generator) beginOutput(
 	id string,
-	outputName, packageName string) (*output, error) {
+	outputName, packageName string,
+) (*output, error) {
 	if packageName == "" {
 		return nil, fmt.Errorf("unable to map schema URI %q to a Go package name", id)
 	}
@@ -425,7 +426,8 @@ func (g *schemaGenerator) generateReferencedType(ref string) (codegen.Type, erro
 }
 
 func (g *schemaGenerator) generateDeclaredType(
-	t *schemas.Type, scope nameScope) (codegen.Type, error) {
+	t *schemas.Type, scope nameScope,
+) (codegen.Type, error) {
 	if decl, ok := g.output.declsBySchema[t]; ok {
 		return &codegen.NamedType{Decl: decl}, nil
 	}
@@ -502,6 +504,90 @@ func (g *schemaGenerator) generateDeclaredType(
 			}
 		}
 
+		if len(structType.Variants) > 0 {
+			for _, v := range structType.Variants {
+				myV := v
+				g.output.file.Package.AddDecl(&codegen.Method{
+					Impl: func(out *codegen.Emitter) {
+						out.Print("func (t %s) As", decl.Name)
+						myV.Generate(out)
+						out.Print("() (")
+						myV.Generate(out)
+						out.Print(", error) {\n")
+						out.Indent(1)
+						out.Print("var body ")
+						myV.Generate(out)
+						out.Print("\n")
+						out.Println("err := json.Unmarshal(t.union, &body)")
+						out.Println("return body, err")
+						out.Indent(-1)
+						out.Println("}")
+					},
+				})
+				g.output.file.Package.AddImport("github.com/deepmap/oapi-codegen/pkg/runtime", "")
+				g.output.file.Package.AddDecl(&codegen.Method{
+					Impl: func(out *codegen.Emitter) {
+						out.Print("func (t *%s) Merge", decl.Name)
+						myV.Generate(out)
+						out.Print("(v ")
+						myV.Generate(out)
+						out.Print(") error {\n")
+						out.Indent(1)
+						out.Println("b, err := json.Marshal(v)")
+						out.Println("if err != nil {")
+						out.Indent(1)
+						out.Println("return err")
+						out.Indent(-1)
+						out.Println("}")
+						out.Println("merged, err := runtime.JsonMerge(b, t.union)")
+						out.Println("t.union = merged")
+						out.Println("return err")
+						out.Indent(-1)
+						out.Println("}")
+					},
+				})
+			}
+
+			// for these kind of types we also have a custom marshaller
+			g.output.file.Package.AddDecl(&codegen.Method{
+				Impl: func(out *codegen.Emitter) {
+					out.Println("func (t %s) MarshalJSON() ([]byte, error) {", decl.Name)
+					out.Indent(1)
+					out.Println("b, err := t.union.MarshalJSON()")
+					out.Println("if err != nil {")
+					out.Indent(1)
+					out.Println("return nil, err")
+					out.Indent(-1)
+					out.Println("}")
+					out.Println("object := make(map[string]json.RawMessage)")
+					out.Println("if t.union != nil {")
+					out.Indent(1)
+					out.Println("err = json.Unmarshal(b, &object)")
+					out.Println("if err != nil {")
+					out.Indent(1)
+					out.Println("return nil, err")
+					out.Indent(-1)
+					out.Println("}")
+					out.Indent(-1)
+					out.Println("}")
+
+					for _, stf := range structType.Fields {
+						out.Println("object[\"%s\"], err = json.Marshal(t.%s)", stf.JSONName, stf.Name)
+						out.Println("if err != nil {")
+						out.Indent(1)
+						out.Println("return nil, fmt.Errorf(\"error marshaling 'type': %%w\", err)")
+						out.Indent(-1)
+						out.Println("}")
+					}
+
+					out.Println("b, err = json.Marshal(object)")
+					out.Println("return b, err")
+					out.Indent(-1)
+					out.Println("}")
+				},
+			})
+		}
+
 		if len(validators) > 0 {
 			for _, v := range validators {
 				if v.desc().hasError {
@@ -516,6 +602,14 @@ func (g *schemaGenerator) generateDeclaredType(
 					out.Comment("UnmarshalJSON implements json.Unmarshaler.")
 					out.Println("func (j *%s) UnmarshalJSON(b []byte) error {", decl.Name)
 					out.Indent(1)
+					if len(structType.Variants) > 0 {
+						out.Println("err := j.union.UnmarshalJSON(b)")
+						out.Println("if err != nil {")
+						out.Indent(1)
+						out.Println("return err")
+						out.Indent(-1)
+						out.Println("}")
+					}
 					out.Println("var %s map[string]interface{}", varNameRawMap)
 					out.Println("if err := json.Unmarshal(b, &%s); err != nil { return err }",
 						varNameRawMap)
@@ -536,6 +630,10 @@ func (g *schemaGenerator) generateDeclaredType(
 						}
 					}
 
+					if len(structType.Variants) > 0 {
+						out.Println("%s.union = j.union", varNamePlainStruct)
+					}
+
 					out.Println("*j = %s(%s)", decl.Name, varNamePlainStruct)
 					out.Println("return nil")
 					out.Indent(-1)
@@ -549,8 +647,9 @@ func (g *schemaGenerator) generateDeclaredType(
 }
 
 func (g *schemaGenerator) generateType(
-	t *schemas.Type, scope nameScope) (codegen.Type, error) {
-	var typeIndex = 0
+	t *schemas.Type, scope nameScope,
+) (codegen.Type, error) {
+	typeIndex := 0
 	var typeShouldBePointer bool
 
 	if ext := t.GoJSONSchemaExtension; ext != nil {
@@ -605,7 +704,8 @@ func (g *schemaGenerator) generateType(
 
 func (g *schemaGenerator) generateStructType(
 	t *schemas.Type,
-	scope nameScope) (codegen.Type, error) {
+	scope nameScope,
+) (codegen.Type, error) {
 	if len(t.Properties) == 0 {
 		if len(t.Required) > 0 {
 			g.warner("Object type with no properties has required fields; " +
@@ -692,13 +792,26 @@ func (g *schemaGenerator) generateStructType(
 
 		structType.AddField(structField)
 	}
+
+	for _, thing := range t.OneOf {
+		if thing.Ref != "" {
+			referencedType, err := g.generateReferencedType(thing.Ref)
+			if err != nil {
+				return nil, err
+			}
+
+			structType.AddVariant(referencedType)
+		} else {
+			return nil, fmt.Errorf("could not generate oneOf type for %s as it is not a reference", scope)
+		}
+	}
 	return &structType, nil
 }
 
 func (g *schemaGenerator) generateTypeInline(
 	t *schemas.Type,
-	scope nameScope) (codegen.Type, error) {
-
+	scope nameScope,
+) (codegen.Type, error) {
 	inlineScope := scope
 	if t.Title != "" {
 		inlineScope = newNameScope(t.Title)
@@ -714,7 +827,7 @@ func (g *schemaGenerator) generateTypeInline(
 			}
 		}
 
-		var typeIndex = 0
+		typeIndex := 0
 		var typeShouldBePointer bool
 
 		if len(t.Type) == 2 {
@@ -755,7 +868,8 @@ func (g *schemaGenerator) generateTypeInline(
 }
 
 func (g *schemaGenerator) generateEnumType(
-	t *schemas.Type, scope nameScope) (codegen.Type, error) {
+	t *schemas.Type, scope nameScope,
+) (codegen.Type, error) {
 	if len(t.Enum) == 0 {
 		return nil, errors.New("enum array cannot be empty")
 	}

@@ -283,12 +283,17 @@ func (NullType) Generate(out *Emitter) {
 type StructType struct {
 	Fields             []StructField
 	RequiredJSONFields []string
+	Variants           []Type
 }
 
 func (StructType) IsNillable() bool { return false }
 
 func (s *StructType) AddField(f StructField) {
 	s.Fields = append(s.Fields, f)
+}
+
+func (s *StructType) AddVariant(f Type) {
+	s.Variants = append(s.Variants, f)
 }
 
 func (s *StructType) Generate(out *Emitter) {
@@ -302,6 +307,9 @@ func (s *StructType) Generate(out *Emitter) {
 		f.Generate(out)
 		out.Newline()
 		i++
+	}
+	if len(s.Variants) > 0 {
+		out.Println("union json.RawMessage")
 	}
 	out.Indent(-1)
 	out.Print("}")

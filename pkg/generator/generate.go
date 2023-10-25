@@ -793,6 +793,19 @@ func (g *schemaGenerator) generateStructType(
 		structType.AddField(structField)
 	}
 
+	for _, thing := range t.AllOf {
+		if thing.Ref != "" {
+			referencedType, err := g.generateReferencedType(thing.Ref)
+			if err != nil {
+				return nil, err
+			}
+
+			structType.AddParent(referencedType)
+		} else {
+			return nil, fmt.Errorf("could not generate allOf type for %s as it is not a reference", scope)
+		}
+	}
+
 	for _, thing := range t.OneOf {
 		if thing.Ref != "" {
 			referencedType, err := g.generateReferencedType(thing.Ref)

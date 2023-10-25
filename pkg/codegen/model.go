@@ -281,12 +281,17 @@ func (NullType) Generate(out *Emitter) {
 }
 
 type StructType struct {
+	Parents            []Type
 	Fields             []StructField
 	RequiredJSONFields []string
 	Variants           []Type
 }
 
 func (StructType) IsNillable() bool { return false }
+
+func (s *StructType) AddParent(f Type) {
+	s.Parents = append(s.Parents, f)
+}
 
 func (s *StructType) AddField(f StructField) {
 	s.Fields = append(s.Fields, f)
@@ -300,6 +305,15 @@ func (s *StructType) Generate(out *Emitter) {
 	out.Println("struct {")
 	out.Indent(1)
 	i := 0
+	for _, p := range s.Parents {
+		if i > 0 {
+			out.Newline()
+		}
+
+		p.Generate(out)
+		out.Newline()
+		i++
+	}
 	for _, f := range s.Fields {
 		if i > 0 {
 			out.Newline()

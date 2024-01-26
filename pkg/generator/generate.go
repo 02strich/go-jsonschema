@@ -428,7 +428,7 @@ func (g *schemaGenerator) generateReferencedType(ref string) (codegen.Type, erro
 func (g *schemaGenerator) generateDeclaredType(
 	t *schemas.Type, scope nameScope,
 ) (codegen.Type, error) {
-	if decl, ok := g.output.declsBySchema[t]; ok {
+	if decl, ok := g.output.declsByName[scope.string()]; ok {
 		return &codegen.NamedType{Decl: decl}, nil
 	}
 

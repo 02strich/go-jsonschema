@@ -524,7 +524,7 @@ func (g *schemaGenerator) generateDeclaredType(
 						out.Println("}")
 					},
 				})
-				g.output.file.Package.AddImport("github.com/deepmap/oapi-codegen/pkg/runtime", "")
+				g.output.file.Package.AddImport("github.com/oapi-codegen/runtime", "")
 				g.output.file.Package.AddDecl(&codegen.Method{
 					Impl: func(out *codegen.Emitter) {
 						out.Print("func (t *%s) Merge", decl.Name)
@@ -539,7 +539,7 @@ func (g *schemaGenerator) generateDeclaredType(
 						out.Println("return err")
 						out.Indent(-1)
 						out.Println("}")
-						out.Println("merged, err := runtime.JsonMerge(b, t.union)")
+						out.Println("merged, err := runtime.JSONMerge(b, t.union)")
 						out.Println("t.union = merged")
 						out.Println("return err")
 						out.Indent(-1)

@@ -588,7 +588,7 @@ func (g *schemaGenerator) generateDeclaredType(
 			})
 		}
 
-		if len(validators) > 0 {
+		if len(validators) > 0 || len(structType.Variants) > 0 {
 			for _, v := range validators {
 				if v.desc().hasError {
 					g.output.file.Package.AddImport("fmt", "")
@@ -706,7 +706,7 @@ func (g *schemaGenerator) generateStructType(
 	t *schemas.Type,
 	scope nameScope,
 ) (codegen.Type, error) {
-	if len(t.Properties) == 0 {
+	if len(t.Properties) == 0 && len(t.OneOf) == 0 {
 		if len(t.Required) > 0 {
 			g.warner("Object type with no properties has required fields; " +
 				"skipping validation code for them since we don't know their types")
